@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>QR Tool</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/qrious"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Space Mono', monospace;
+  background: #09090b;
+  color: #fafafa;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.container {
+  width: 440px;
+  max-width: 92%;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.header h1 {
+  font-size: 26px;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.header p {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #a1a1aa;
+}
+
+.card {
+  background: #111113;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid #27272a;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+select, input {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  background: #0a0a0c;
+  border: 1px solid #27272a;
+  border-radius: 10px;
+  color: white;
+  transition: all 0.2s ease;
+  font-family: 'Space Mono', monospace;
+}
+
+select:focus, input:focus {
+  outline: none;
+  border-color: white;
+}
+
+button {
+  margin-top: 12px;
+  width: 100%;
+  padding: 12px;
+  background: white;
+  color: black;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  font-family: 'Space Mono', monospace;
+}
+
+button:hover {
+  transform: scale(1.02);
+}
+
+/* animation */
+#fields {
+  transition: all 0.3s ease;
+}
+
+.fade-out {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+/* QR box */
+.qr-wrapper {
+  margin-top: 20px;
+  padding: 24px;
+  background: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  border-radius: 16px;
+}
+
+/* 🔥 coins propres (sans casser les angles) */
+.corner {
+  width: 26px;
+  height: 26px;
+  position: absolute;
+}
+
+.corner::before,
+.corner::after {
+  content: "";
+  position: absolute;
+  background: black;
+  border-radius: 2px; /* léger arrondi propre */
+}
+
+/* lignes du coin */
+.corner::before {
+  width: 100%;
+  height: 3px;
+}
+
+.corner::after {
+  width: 3px;
+  height: 100%;
+}
+
+/* positions */
+.tl { top: 10px; left: 10px; }
+.tl::before { top: 0; left: 0; }
+.tl::after { top: 0; left: 0; }
+
+.tr { top: 10px; right: 10px; }
+.tr::before { top: 0; right: 0; }
+.tr::after { top: 0; right: 0; }
+
+.bl { bottom: 10px; left: 10px; }
+.bl::before { bottom: 0; left: 0; }
+.bl::after { bottom: 0; left: 0; }
+
+.br { bottom: 10px; right: 10px; }
+.br::before { bottom: 0; right: 0; }
+.br::after { bottom: 0; right: 0; }
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <h1>QR Code Generator</h1>
+    <p>Create and download QR codes for links, WiFi, contacts and more</p>
+  </div>
+
+  <div class="card">
+    <select id="type" onchange="changeType()">
+      <option value="url">URL</option>
+      <option value="wifi">WiFi</option>
+      <option value="contact">Contact</option>
+      <option value="email">Email</option>
+      <option value="location">Location</option>
+    </select>
+
+    <div id="fields"></div>
+
+    <button onclick="generateQR()">Generate</button>
+
+    <div class="qr-wrapper">
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+      <canvas id="qr"></canvas>
+    </div>
+
+    <button onclick="downloadPNG()">Download PNG</button>
+    <button onclick="downloadPDF()">Download PDF</button>
+  </div>
+</div>
+
+<script>
+
+let qr;
+
+function renderFields() {
+  const type = document.getElementById("type").value;
+  const fields = document.getElementById("fields");
+
+  if (type === "url") {
+    fields.innerHTML = `<input id="data" placeholder="https://example.com">`;
+  }
+
+  if (type === "wifi") {
+    fields.innerHTML = `
+      <input id="ssid" placeholder="Network name">
+      <input id="password" placeholder="Password">
+    `;
+  }
+
+  if (type === "contact") {
+    fields.innerHTML = `
+      <input id="name" placeholder="Full name">
+      <input id="phone" placeholder="Phone">
+      <input id="email" placeholder="Email">
+    `;
+  }
+
+  if (type === "email") {
+    fields.innerHTML = `
+      <input id="email" placeholder="Email">
+      <input id="subject" placeholder="Subject">
+    `;
+  }
+
+  if (type === "location") {
+    fields.innerHTML = `
+      <input id="lat" placeholder="Latitude">
+      <input id="lng" placeholder="Longitude">
+    `;
+  }
+}
+
+function changeType() {
+  const fields = document.getElementById("fields");
+  fields.classList.add("fade-out");
+
+  setTimeout(() => {
+    renderFields();
+    fields.classList.remove("fade-out");
+  }, 200);
+}
+
+function generateQR() {
+  const type = document.getElementById("type").value;
+  let value = "";
+
+  if (type === "url") {
+    value = document.getElementById("data").value;
+  }
+
+  if (type === "wifi") {
+    const ssid = document.getElementById("ssid").value;
+    const pass = document.getElementById("password").value;
+    value = `WIFI:T:WPA;S:${ssid};P:${pass};;`;
+  }
+
+  if (type === "contact") {
+    const name = document.getElementById("name").value;
+    const phone = document.getElementById("phone").value;
+    const email = document.getElementById("email").value;
+    value = `BEGIN:VCARD\nFN:${name}\nTEL:${phone}\nEMAIL:${email}\nEND:VCARD`;
+  }
+
+  if (type === "email") {
+    const email = document.getElementById("email").value;
+    const subject = document.getElementById("subject").value;
+    value = `mailto:${email}?subject=${subject}`;
+  }
+
+  if (type === "location") {
+    const lat = document.getElementById("lat").value;
+    const lng = document.getElementById("lng").value;
+    value = `https://maps.google.com/?q=${lat},${lng}`;
+  }
+
+  qr = new QRious({
+    element: document.getElementById("qr"),
+    value: value,
+    size: 220
+  });
+}
+
+function downloadPNG() {
+  const canvas = document.getElementById("qr");
+  const link = document.createElement("a");
+  link.download = "qr.png";
+  link.href = canvas.toDataURL("image/png", 1.0);
+  link.click();
+}
+
+function downloadPDF() {
+  const canvas = document.getElementById("qr");
+  const img = canvas.toDataURL("image/png", 1.0);
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF();
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+
+  const size = 100;
+  const x = (pageWidth - size) / 2;
+  const y = (pageHeight - size) / 2;
+
+  pdf.addImage(img, "PNG", x, y, size, size);
+  pdf.save("qr.pdf");
+}
+
+renderFields();
+
+</script>
+
+</body>
+</html>
