@@ -2,7 +2,7 @@
 
 A lightweight web app to generate customizable QR codes from multiple data types such as URLs, WiFi credentials, contacts, emails, and locations. The app provides a clean interface with smooth interactions and allows users to download QR codes as high-quality PNG or PDF files.
 
-Live demo: [QR Code Studio](https://your-link-here.com)
+Live demo: [QR Code Studio](https://drichdev.github.io/qrcodesite/)
 
 ## Technologies
 
